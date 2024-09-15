@@ -1,0 +1,26 @@
+{
+	"id": "raspi-ups",
+	"name": "raspi-ups",
+	"shortname": "module-raspi-ups",
+	"description": "A Module to view UPS data",
+	"version": "0.0.0",
+	"license": "MIT",
+	"repository": "git+https://github.com/bitfocus/companion-module-raspi-ups.git",
+	"bugs": "https://github.com/bitfocus/companion-module-raspi-ups/issues",
+	"maintainers": [
+		{
+			"name": "Frankie Hollywood",
+			"email": "smtpchecking@gmail.com"
+		}
+	],
+	"runtime": {
+		"type": "node18",
+		"api": "nodejs-ipc",
+		"apiVersion": "0.0.0",
+		"entrypoint": "../main.js"
+	},
+	"legacyIds": [],
+	"manufacturer": "zoneminder.com",
+	"products": ["zoneminder"],
+	"keywords": []
+}
