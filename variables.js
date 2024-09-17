@@ -4,6 +4,6 @@ module.exports = async function (self) {
 		{ variableId: 'current', name: "Current in mA" },
 		{ variableId: 'power', name: 'Power' },
 		{ variableId: 'percent', name: 'Percent Left' },
-		{ variableId: 'timeRemaining', name: 'Time remaining (hours)' }
+		{ variableId: 'percentRemaining', name: 'Percent of battery left until 3.7V' }
 	])
 }
