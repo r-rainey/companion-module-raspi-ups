@@ -1,50 +1,100 @@
 const { InstanceBase, Regex, runEntrypoint, InstanceStatus } = require('@companion-module/base')
+const UpgradeScripts = require('./upgrades')
+const UpdateActions = require('./actions')
 const UpdateFeedbacks = require('./feedbacks')
 const UpdateVariableDefinitions = require('./variables')
 const got = require('got')
 
-// This module will just query the flask app running on the raspi
-// to get UPS information, which is returned in JSON
-// Update the variables to reflect whatever we want to display
+var percent, percentRemaining = ''
 
-class zoneminderInstance extends InstanceBase {
-    async init(config) {
-        console.log("The init function begins")
-        console.log(config)
-        await this.getInformation()
-        setInterval(await this.getInformation(), 30 * 1000)
-    }
-    async getInformation() {
-        // Make a call to the flask app
-        const url = `http://${this.config.host}:${this.config.port}`
-        console.log(url);
-        const response = await got(url).json();
-        console.log(response)
+class ModuleInstance extends InstanceBase {
+	constructor(internal) {
+		super(internal)
+	}
 
-    }
-    getConfigFields() {
-        return [
-            {
-                type: "static-text",
-                id: "info",
-                width: 12,
-                label: "Information",
-                value: "Control a camera from Zoneminder, supports PTZ and creates snapshots on your computer. If you need more cameras, just setup additional modules."
-            },
-            {
-                type: 'textinput',
-                id: 'host',
-                label: 'Target IP/hostname',
-                width: 15,
-                regex: Regex.SOMETHING,
-            },
-            {
-                type: 'numeric',
-                id: 'port',
-                label: 'Port number',
-            }
+	async init(config) {
+		this.config = config
+		await this.getInformation() //
+		this.setVariableValues({
+			'percent': percent,
+			'percentRemaining': percentRemaining
+		})
+		var roo = setInterval(() => {
+			console.log('refreshed token');
+			this.getInformation();
+			this.setVariableValues({
+				'percent': percent,
+				'percentRemaining': percentRemaining
+			})
+		}, 30 * 1000)
+		this.updateStatus(InstanceStatus.Ok)
 
-        ]
-    }
+		this.updateActions() // export actions
+		this.updateFeedbacks() // export feedbacks
+		this.updateVariableDefinitions() // export variable definitions
+	}
+	// When module gets deleted
+	async destroy() {
+		this.log('debug', 'destroy')
+	}
 
+	async getInformation() {
+		// Make a call to the flask app
+		const url = `http://127.0.0.1:5000/`
+		console.log(url);
+		const response = await got(url);
+		// console.log(response)
+		var jsontext = JSON.parse(response.body)
+		console.log(jsontext)
+		percent = jsontext.Percent.toFixed(2)
+		percentRemaining = jsontext.Percent_Remaining.toFixed(2)
+		// percentRemaining = this.convertDecimalToHoursMinutes(jsontext.Percent_Remaining)
+		console.log(percent)
+		console.log(percentRemaining)
+
+	}
+
+	convertDecimalToHoursMinutes(decimalHours) {
+		const hours = Math.floor(decimalHours);
+		const minutes = Math.round((decimalHours - hours) * 60);
+		return `${hours}:${minutes}`;
+	}
+
+	async configUpdated(config) {
+		this.config = config
+	}
+
+	// Return config fields for web config
+	getConfigFields() {
+		return [
+			{
+				type: 'textinput',
+				id: 'host',
+				label: 'Target IP',
+				width: 8,
+				regex: Regex.IP,
+			},
+			{
+				type: 'textinput',
+				id: 'port',
+				label: 'Target Port',
+				width: 4,
+				regex: Regex.PORT,
+			},
+		]
+	}
+
+	updateActions() {
+		UpdateActions(this)
+	}
+
+	updateFeedbacks() {
+		UpdateFeedbacks(this)
+	}
+
+	updateVariableDefinitions() {
+		UpdateVariableDefinitions(this)
+	}
 }
+
+runEntrypoint(ModuleInstance, UpgradeScripts)
